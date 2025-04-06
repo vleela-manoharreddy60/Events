@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upcoming Events - EventSphere</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --primary-blue: #00c4cc; --primary-purple: #a100b2; --bg-dark: radial-gradient(circle at top, #1a252e 0%, #0f172a 70%, #0a101b 100%); }
+        body { background: var(--bg-dark); font-family: 'Poppins', sans-serif; min-height: 100vh; color: #e5e7eb; position: relative; }
+        .navbar { background: rgba(10, 16, 27, 0.9); box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3); z-index: 20; }
+        .event-card {
+            background: rgba(15, 23, 42, 0.9); border: 1px solid var(--primary-blue); border-radius: 1rem;
+            padding: 1rem; transition: transform 0.3s ease, box-shadow 0.3s ease; overflow: hidden;
+        }
+        .event-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 196, 204, 0.3); }
+        .event-image {
+            width: 100%; height: 200px; object-fit: cover; border-radius: 0.5rem;
+            background-color: rgba(0, 0, 0, 0.2); cursor: pointer; /* Indicate clickable */
+        }
+        .event-image.error { filter: grayscale(100%) brightness(70%); }
+        .event-details { padding-top: 1rem; }
+        .register-btn {
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple)); color: #fff; font-weight: 600;
+            transition: transform 0.3s ease; border-radius: 0.5rem; padding: 0.5rem 1rem;
+            margin-top: 1rem; display: block; width: 100%; text-align: center;
+        }
+        .register-btn:hover { transform: translateY(-2px); }
+        .refresh-btn {
+            background: linear-gradient(90deg, #22c55e, #06b6d4); color: #fff; font-weight: 600;
+            transition: transform 0.3s ease; border-radius: 0.5rem; padding: 0.5rem 1rem;
+        }
+        .refresh-btn:hover { transform: translateY(-2px); }
+        .toggle-slider {
+            width: 60px; height: 30px; background: #4b5563; border-radius: 15px; cursor: pointer;
+            position: fixed; top: 20px; right: 20px; transition: background 0.3s;
+        }
+        .toggle-slider::before {
+            content: '☾'; width: 26px; height: 26px; background: #fff; border-radius: 50%;
+            top: 2px; left: 2px; transition: left 0.3s; display: flex; align-items: center; justify-content: center;
+        }
+        body.light-mode .toggle-slider::before { content: '☀'; left: 32px; }
+        body.light-mode { background: #f0f8fa; color: #333; }
+        body.light-mode .event-card { background: rgba(240, 248, 250, 0.9); }
+        body.light-mode .event-image { background-color: rgba(0, 0, 0, 0.1); }
+        body.light-mode .event-details { color: #333; }
+    </style>
+</head>
+<body class="relative">
+    <nav class="navbar fixed top-0 w-full py-4">
+        <div class="container mx-auto px-4 flex justify-between items-center">
+            <a href="events.html" class="text-2xl font-bold text-white">EventSphere</a>
+            <div class="space-x-6">
+                <a href="events.html" class="text-lg font-medium text-white hover:text-primary-blue">Home</a>
+                <a href="#" id="logout" class="text-lg font-medium text-white hover:text-primary-blue">Logout</a>
+            </div>
+        </div>
+    </nav>
+    <div class="toggle-slider" id="theme-toggle"></div>
+    <div class="container mx-auto px-4 pt-24 pb-8 z-10">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-2xl font-bold text-center">Upcoming Events</h1>
+            <button id="refresh-btn" class="refresh-btn">Refresh Events</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="event-grid"></div>
+    </div>
+    <script>
+        if (!localStorage.getItem('isLoggedIn')) window.location.href = 'login.html';
+        document.getElementById('logout').addEventListener('click', (e) => {
+            e.preventDefault(); localStorage.removeItem('isLoggedIn'); window.location.href = 'login.html';
+        });
+        let events = JSON.parse(localStorage.getItem('events')) || [];
+        const eventGrid = document.getElementById('event-grid');
+        const registrations = JSON.parse(localStorage.getItem('registrations')) || [];
+        const userData = JSON.parse(localStorage.getItem('userData')) || {};
+
+        function renderEvents() {
+            eventGrid.innerHTML = '';
+            if (events.length === 0) {
+                eventGrid.innerHTML = '<p class="text-center col-span-full text-gray-500">No upcoming events available.</p>';
+                return;
+            }
+            events.forEach(event => {
+                const isRegistered = registrations.some(r => r.regid === userData.regid && r.eventName === event.name);
+                const card = document.createElement('div');
+                card.className = 'event-card';
+                card.innerHTML = `
+                    <img src="${event.poster || 'https://via.placeholder.com/400x200?text=No+Image'}" alt="${event.name} Poster" class="event-image" onclick="window.open('image_view.html?image=${encodeURIComponent(event.poster || 'https://via.placeholder.com/400x200?text=No+Image')}&name=${encodeURIComponent(event.name)}', '_blank')" onerror="this.className='event-image error'; this.src='https://via.placeholder.com/400x200?text=Image+Failed';">
+                    <div class="event-details">
+                        <h2 class="text-lg font-semibold mb-2">${event.name}</h2>
+                        <p class="mb-1">Date: ${new Date(event.date).toLocaleDateString()}</p>
+                        <p class="mb-1">Coordinator: ${event.coordinatorName}</p>
+                        <p class="mb-1">Contact: ${event.coordinatorContact || 'N/A'}</p>
+                        <button class="register-btn w-full mt-3" data-event="${event.name}" ${isRegistered ? 'disabled' : ''}>${isRegistered ? 'Already Registered' : 'Register'}</button>
+                    </div>
+                `;
+                eventGrid.appendChild(card);
+            });
+            document.querySelectorAll('.register-btn').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    if (button.disabled) return;
+                    const eventName = button.getAttribute('data-event');
+                    window.location.href = `event_register.html?event=${encodeURIComponent(eventName)}`;
+                });
+            });
+        }
+        document.getElementById('refresh-btn').addEventListener('click', () => {
+            events = JSON.parse(localStorage.getItem('events')) || [];
+            renderEvents();
+        });
+        window.addEventListener('storage', () => {
+            events = JSON.parse(localStorage.getItem('events')) || [];
+            registrations = JSON.parse(localStorage.getItem('registrations')) || [];
+            renderEvents();
+        });
+        const toggle = document.getElementById('theme-toggle');
+        toggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        });
+        if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+        renderEvents();
+    </script>
+</body>
+</html>

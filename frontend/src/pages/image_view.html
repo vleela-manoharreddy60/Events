@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Image - EventSphere</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #00c4cc;
+            --primary-purple: #a100b2;
+            --bg-dark: radial-gradient(circle at top, #1a252e 0%, #0f172a 70%, #0a101b 100%);
+        }
+        body {
+            background: var(--bg-dark); font-family: 'Poppins', sans-serif; min-height: 100vh; color: #e5e7eb;
+            display: flex; justify-content: center; align-items: center; position: relative;
+        }
+        .image-container {
+            max-width: 90%; max-height: 90vh; text-align: center; padding: 1rem;
+        }
+        .event-image {
+            max-width: 100%; max-height: 80vh; object-fit: contain; border-radius: 1rem;
+            box-shadow: 0 5px 15px rgba(0, 196, 204, 0.3); background-color: rgba(0, 0, 0, 0.2);
+        }
+        .event-image.error { filter: grayscale(100%) brightness(70%); }
+        .event-name {
+            font-size: 1.5rem; font-weight: 600; margin-top: 1rem;
+        }
+        .back-btn {
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple)); color: #fff; font-weight: 600;
+            transition: transform 0.3s ease; border-radius: 0.5rem; padding: 0.5rem 1rem;
+            margin-top: 1rem; display: inline-block;
+        }
+        .back-btn:hover { transform: translateY(-2px); }
+        .toggle-slider {
+            width: 60px; height: 30px; background: #4b5563; border-radius: 15px; cursor: pointer;
+            position: fixed; top: 20px; right: 20px; transition: background 0.3s;
+        }
+        .toggle-slider::before {
+            content: '☾'; width: 26px; height: 26px; background: #fff; border-radius: 50%;
+            top: 2px; left: 2px; transition: left 0.3s; display: flex; align-items: center; justify-content: center;
+        }
+        body.light-mode .toggle-slider::before { content: '☀'; left: 32px; }
+        body.light-mode {
+            background: #f0f8fa; color: #333;
+        }
+        body.light-mode .image-container { background: rgba(240, 248, 250, 0.9); border-radius: 1rem; }
+        body.light-mode .event-image { background-color: rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body class="relative">
+    <div class="toggle-slider" id="theme-toggle"></div>
+    <div class="image-container">
+        <img id="view-image" src="" alt="Event Image" class="event-image" onerror="this.className='event-image error'; this.src='https://via.placeholder.com/400x400?text=Image+Failed';">
+        <h2 id="event-name" class="event-name"></h2>
+        <a href="javascript:history.back()" class="back-btn">Back</a>
+    </div>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const imageUrl = decodeURIComponent(urlParams.get('image') || 'https://via.placeholder.com/400x400?text=No+Image');
+        const eventName = decodeURIComponent(urlParams.get('name') || 'Unknown Event');
+        document.getElementById('view-image').src = imageUrl;
+        document.getElementById('event-name').textContent = eventName;
+        const toggle = document.getElementById('theme-toggle');
+        toggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        });
+        if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+    </script>
+</body>
+</html>

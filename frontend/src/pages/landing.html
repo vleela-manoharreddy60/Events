@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vignan's EventSphere | Neon Nexus</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-cyan: #00f7ff;
+            --neon-purple: #d400ff;
+            --bg-dark: #0d0d1f;
+        }
+
+        body {
+            background: var(--bg-dark);
+            color: #e5e7eb;
+            font-family: 'Orbitron', sans-serif;
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+        }
+
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            opacity: 0.85;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Neon Effects */
+        .neon-text {
+            text-shadow: 0 0 5px var(--neon-cyan), 0 0 15px var(--neon-cyan), 0 0 30px var(--neon-cyan), 0 0 50px var(--neon-cyan);
+            animation: pulse 2s infinite alternate;
+        }
+
+        .neon-button {
+            background: linear-gradient(135deg, var(--neon-purple), #ff00cc);
+            border: 2px solid var(--neon-cyan);
+            box-shadow: 0 0 15px var(--neon-purple), inset 0 0 10px var(--neon-cyan);
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .neon-button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300%;
+            height: 300%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%) rotate(45deg);
+            transition: all 0.5s ease;
+            opacity: 0;
+        }
+
+        .neon-button:hover::before {
+            opacity: 1;
+            width: 0;
+            height: 0;
+        }
+
+        .neon-button:hover {
+            transform: scale(1.1) rotate(2deg);
+            box-shadow: 0 0 25px var(--neon-purple), 0 0 40px var(--neon-cyan);
+        }
+
+        /* Main Content */
+        main {
+            background: radial-gradient(circle at center, rgba(0, 247, 255, 0.2) 0%, transparent 60%);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Footer */
+        footer {
+            background: linear-gradient(0deg, rgba(13, 13, 31, 0.9), transparent);
+            font-size: 0.9rem;
+            letter-spacing: 1px;
+        }
+
+        /* Animations */
+        @keyframes pulse {
+            0% { text-shadow: 0 0 5px var(--neon-cyan), 0 0 15px var(--neon-cyan), 0 0 30px var(--neon-cyan); }
+            100% { text-shadow: 0 0 10px var(--neon-cyan), 0 0 25px var(--neon-cyan), 0 0 50px var(--neon-cyan); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(40px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeInUp 1.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body>
+    <div id="canvas-container"></div>
+    <main class="relative z-10 flex items-center justify-center min-h-screen">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-6xl md:text-8xl font-bold mb-8 tracking-wider text-cyan-300 neon-text animate-fade-in">Vignan's EventSphere</h1>
+            <p class="text-2xl md:text-3xl mb-12 font-light text-gray-200 animate-fade-in" style="animation-delay: 0.3s;">
+                A Cosmic Journey Through Events
+            </p>
+            <a href="index1.html" class="inline-block neon-button text-white font-bold py-5 px-12 rounded-full shadow-2xl animate-fade-in" style="animation-delay: 0.6s;">
+                Explore Events
+            </a>
+        </div>
+    </main>
+    <footer class="fixed bottom-0 left-0 w-full text-center p-4 text-gray-400 z-10">
+        © 2025 Vignan's EventSphere. All rights reserved.
+    </footer>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.querySelector('#canvas-container'), alpha: true });
+
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        camera.position.z = 8;
+
+        const geometry = new THREE.IcosahedronGeometry(10, 1);
+        const material = new THREE.MeshBasicMaterial({ color: 0x00f7ff, wireframe: true });
+        const icosahedron = new THREE.Mesh(geometry, material);
+        scene.add(icosahedron);
+
+        const pointLight = new THREE.PointLight(0xd400ff, 2);
+        pointLight.position.set(15, 15, 15);
+        scene.add(pointLight);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            icosahedron.rotation.x += 0.01;
+            icosahedron.rotation.y += 0.015;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('mousemove', (event) => {
+            const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            const mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            camera.position.x = mouseX * 2;
+            camera.position.y = mouseY * 2;
+        });
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>

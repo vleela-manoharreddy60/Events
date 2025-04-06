@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment - EventSphere</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        :root { --primary-blue: #00c4cc; --primary-purple: #a100b2; --bg-dark: radial-gradient(circle at top, #1a252e 0%, #0f172a 70%, #0a101b 100%); }
+        body { background: var(--bg-dark); font-family: 'Poppins', sans-serif; min-height: 100vh; color: #e5e7eb; position: relative; }
+        .payment-container {
+            background: rgba(15, 23, 42, 0.9); border: 1px solid var(--primary-blue); border-radius: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 196, 204, 0.2); padding: 1.5rem; max-width: 400px; width: 100%;
+            margin: 0 auto;
+        }
+        .reference-screenshot {
+            width: 100%; height: 200px; object-fit: contain; border-radius: 0.5rem;
+            background-color: rgba(0, 0, 0, 0.2);
+        }
+        .reference-screenshot.error { filter: grayscale(100%) brightness(70%); }
+        .form-input { background: rgba(31, 41, 55, 0.9); border: 1px solid var(--primary-blue); color: #e5e7eb; border-radius: 0.5rem; }
+        .submit-btn {
+            background: linear-gradient(90deg, var(--primary-blue), var(--primary-purple)); color: #fff; font-weight: 600;
+            transition: transform 0.3s ease; border-radius: 0.5rem;
+        }
+        .submit-btn:hover { transform: translateY(-2px); }
+        .modal {
+            display: none; position: fixed; inset: 0; background: rgba(0, 0, 0, 0.7); z-index: 20;
+            justify-content: center; align-items: center;
+        }
+        .modal-content {
+            background: rgba(15, 23, 42, 0.9); border: 1px solid var(--primary-blue); border-radius: 1rem;
+            box-shadow: 0 2px 10px rgba(0, 196, 204, 0.2); padding: 1.5rem; max-width: 400px; width: 100%;
+            text-align: center;
+        }
+        .whatsapp-link {
+            color: #22c55e; word-break: break-all; margin-top: 1rem; display: block;
+        }
+        .whatsapp-link:hover { text-decoration: underline; }
+        .toggle-slider {
+            width: 60px; height: 30px; background: #4b5563; border-radius: 15px; cursor: pointer;
+            position: fixed; top: 20px; right: 20px; transition: background 0.3s;
+        }
+        .toggle-slider::before {
+            content: '☾'; width: 26px; height: 26px; background: #fff; border-radius: 50%;
+            top: 2px; left: 2px; transition: left 0.3s; display: flex; align-items: center; justify-content: center;
+        }
+        body.light-mode .toggle-slider::before { content: '☀'; left: 32px; }
+        body.light-mode { background: #f0f8fa; color: #333; }
+        body.light-mode .payment-container, body.light-mode .modal-content { background: rgba(240, 248, 250, 0.9); }
+        body.light-mode .reference-screenshot { background-color: rgba(0, 0, 0, 0.1); }
+        body.light-mode .form-input { background: #fff; color: #333; }
+        body.light-mode .whatsapp-link { color: #16a34a; }
+    </style>
+</head>
+<body class="relative">
+    <div class="toggle-slider" id="theme-toggle"></div>
+    <div class="container mx-auto px-4 py-8 z-10">
+        <h1 id="payment-title" class="text-2xl font-bold mb-4 text-center"></h1>
+        <div class="payment-container">
+            <div id="phonepe-section">
+                <h4 class="text-lg font-medium mb-2">PhonePe Payment</h4>
+                <img id="reference-screenshot" src="" alt="Reference Screenshot" class="reference-screenshot" onerror="this.className='reference-screenshot error'; this.src='https://via.placeholder.com/300x200?text=Image+Not+Available';">
+                <label class="block text-sm font-medium mb-1">Upload Your PhonePe Screenshot</label>
+                <input type="file" id="payment-screenshot" class="form-input w-full p-2" accept="image/*" required>
+                <button id="submit-phonepe" class="submit-btn w-full py-2 mt-3">Submit Payment</button>
+            </div>
+            <div id="manual-section" class="mt-4">
+                <h4 class="text-lg font-medium mb-2">Manual Payment</h4>
+                <p class="text-gray-500 mb-2">Confirm with the event coordinator.</p>
+                <button id="submit-manual" class="submit-btn w-full py-2">Confirm Manual Payment</button>
+            </div>
+        </div>
+        <p class="text-center mt-4 text-sm"><a href="events.html" class="text-primary-blue hover:underline">Back to Events</a></p>
+    </div>
+    <div id="confirmation-modal" class="modal">
+        <div class="modal-content">
+            <h2 class="text-xl font-bold mb-4">Payment Confirmation</h2>
+            <p id="modal-message" class="mb-4"></p>
+            <a id="whatsapp-link" href="" target="_blank" class="whatsapp-link">Join WhatsApp Group</a>
+            <button id="close-modal" class="submit-btn w-full py-2 mt-3">Close</button>
+        </div>
+    </div>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventName = urlParams.get('event') || 'Unknown Event';
+        const registrationData = JSON.parse(decodeURIComponent(urlParams.get('registration') || '{}'));
+        document.getElementById('payment-title').textContent = `Payment for ${eventName}`;
+        const events = JSON.parse(localStorage.getItem('events')) || [];
+        const event = events.find(e => e.name === eventName);
+        if (event && event.phonepeScreenshot) {
+            document.getElementById('reference-screenshot').src = event.phonepeScreenshot;
+        } else {
+            document.getElementById('reference-screenshot').src = 'https://via.placeholder.com/300x200?text=Reference+Not+Available';
+        }
+
+        document.getElementById('submit-phonepe').addEventListener('click', () => {
+            const file = document.getElementById('payment-screenshot').files[0];
+            if (!file) { alert('Please upload a screenshot.'); return; }
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const payment = { eventName, username: registrationData.userName, regid: registrationData.regid, paymentMethod: 'PhonePe', timestamp: new Date().toLocaleString(), screenshot: e.target.result };
+                let payments = JSON.parse(localStorage.getItem('eventPayments')) || [];
+                payments.push(payment);
+                localStorage.setItem('eventPayments', JSON.stringify(payments));
+                showModal('Successfully Registered!', event?.whatsappLink || '#');
+            };
+            reader.readAsDataURL(file);
+        });
+
+        document.getElementById('submit-manual').addEventListener('click', () => {
+            const payment = { eventName, username: registrationData.userName, regid: registrationData.regid, paymentMethod: 'Manual', timestamp: new Date().toLocaleString() };
+            let payments = JSON.parse(localStorage.getItem('eventPayments')) || [];
+            payments.push(payment);
+            localStorage.setItem('eventPayments', JSON.stringify(payments));
+            showModal('Successfully Registered!', event?.whatsappLink || '#');
+        });
+
+        function showModal(message, whatsappLink) {
+            const modal = document.getElementById('confirmation-modal');
+            const modalMessage = document.getElementById('modal-message');
+            const whatsappLinkElement = document.getElementById('whatsapp-link');
+            modalMessage.textContent = message;
+            if (whatsappLink && whatsappLink.startsWith('http')) {
+                whatsappLinkElement.href = whatsappLink;
+                whatsappLinkElement.style.display = 'block';
+            } else {
+                whatsappLinkElement.style.display = 'none';
+            }
+            modal.style.display = 'flex';
+            document.getElementById('close-modal').focus();
+            setTimeout(() => { modal.style.display = 'none'; window.location.href = 'events.html'; }, 5000); // Auto-close after 5 seconds
+        }
+        document.getElementById('close-modal').addEventListener('click', () => document.getElementById('confirmation-modal').style.display = 'none');
+        document.getElementById('confirmation-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('confirmation-modal')) document.getElementById('confirmation-modal').style.display = 'none';
+        });
+        const toggle = document.getElementById('theme-toggle');
+        toggle.addEventListener('click', () => {
+            document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
+        });
+        if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+    </script>
+</body>
+</html>
