@@ -17,7 +17,7 @@
         .event-card:hover { transform: translateY(-3px); box-shadow: 0 5px 15px rgba(0, 196, 204, 0.3); }
         .event-image {
             width: 100%; height: 200px; object-fit: cover; border-radius: 0.5rem;
-            background-color: rgba(0, 0, 0, 0.2); cursor: pointer; /* Indicate clickable */
+            background-color: rgba(0, 0, 0, 0.2); cursor: pointer;
         }
         .event-image.error { filter: grayscale(100%) brightness(70%); }
         .event-details { padding-top: 1rem; }
@@ -68,8 +68,11 @@
     <script>
         if (!localStorage.getItem('isLoggedIn')) window.location.href = 'login.html';
         document.getElementById('logout').addEventListener('click', (e) => {
-            e.preventDefault(); localStorage.removeItem('isLoggedIn'); window.location.href = 'login.html';
+            e.preventDefault(); 
+            localStorage.removeItem('isLoggedIn'); 
+            window.location.href = 'login.html';
         });
+        
         let events = JSON.parse(localStorage.getItem('events')) || [];
         const eventGrid = document.getElementById('event-grid');
         const registrations = JSON.parse(localStorage.getItem('registrations')) || [];
@@ -86,13 +89,21 @@
                 const card = document.createElement('div');
                 card.className = 'event-card';
                 card.innerHTML = `
-                    <img src="${event.poster || 'https://via.placeholder.com/400x200?text=No+Image'}" alt="${event.name} Poster" class="event-image" onclick="window.open('image_view.html?image=${encodeURIComponent(event.poster || 'https://via.placeholder.com/400x200?text=No+Image')}&name=${encodeURIComponent(event.name)}', '_blank')" onerror="this.className='event-image error'; this.src='https://via.placeholder.com/400x200?text=Image+Failed';">
+                    <img src="${event.poster || 'https://via.placeholder.com/400x200?text=No+Image'}" 
+                         alt="${event.name} Poster" 
+                         class="event-image" 
+                         onclick="window.open('image_view.html?image=${encodeURIComponent(event.poster || 'https://via.placeholder.com/400x200?text=No+Image')}&name=${encodeURIComponent(event.name)}', '_blank')" 
+                         onerror="this.className='event-image error'; this.src='https://via.placeholder.com/400x200?text=Image+Failed';">
                     <div class="event-details">
                         <h2 class="text-lg font-semibold mb-2">${event.name}</h2>
                         <p class="mb-1">Date: ${new Date(event.date).toLocaleDateString()}</p>
                         <p class="mb-1">Coordinator: ${event.coordinatorName}</p>
                         <p class="mb-1">Contact: ${event.coordinatorContact || 'N/A'}</p>
-                        <button class="register-btn w-full mt-3" data-event="${event.name}" ${isRegistered ? 'disabled' : ''}>${isRegistered ? 'Already Registered' : 'Register'}</button>
+                        <button class="register-btn w-full mt-3" 
+                                data-event="${event.name}" 
+                                ${isRegistered ? 'disabled' : ''}>
+                            ${isRegistered ? 'Already Registered' : 'Register'}
+                        </button>
                     </div>
                 `;
                 eventGrid.appendChild(card);
@@ -105,21 +116,25 @@
                 });
             });
         }
+
         document.getElementById('refresh-btn').addEventListener('click', () => {
             events = JSON.parse(localStorage.getItem('events')) || [];
             renderEvents();
         });
+
         window.addEventListener('storage', () => {
             events = JSON.parse(localStorage.getItem('events')) || [];
             registrations = JSON.parse(localStorage.getItem('registrations')) || [];
             renderEvents();
         });
+
         const toggle = document.getElementById('theme-toggle');
         toggle.addEventListener('click', () => {
             document.body.classList.toggle('light-mode');
             localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         });
         if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+
         renderEvents();
     </script>
 </body>
