@@ -49,37 +49,56 @@
     </div>
     <div class="toggle-slider" id="theme-toggle"></div>
     <script>
+        // Check if user is authenticated
+        if (!localStorage.getItem('authToken')) {
+            window.location.href = 'login.html';
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const eventName = urlParams.get('event') || 'Unknown Event';
         document.getElementById('event-title').textContent = `Register for ${eventName}`;
-        const userData = JSON.parse(localStorage.getItem('userData')) || {};
-        const registrations = JSON.parse(localStorage.getItem('registrations')) || [];
 
-        document.getElementById('registration-form').addEventListener('submit', (e) => {
+        document.getElementById('registration-form').addEventListener('submit', async (e) => {
             e.preventDefault();
-            const regid = document.getElementById('reg-id').value;
-            const existingRegistration = registrations.find(r => r.regid === regid && r.eventName === eventName);
-            if (existingRegistration) {
-                alert('You are already registered for this event!');
-                return;
-            }
             const registrationData = {
                 eventName,
                 userName: document.getElementById('user-name').value,
-                regid,
+                regid: document.getElementById('reg-id').value,
                 phoneNumber: document.getElementById('phone-number').value,
-                timestamp: new Date().toLocaleString()
+                timestamp: new Date().toISOString()
             };
-            if (!registrationData.userName || !regid || !registrationData.phoneNumber) {
+
+            // Basic client-side validation
+            if (!registrationData.userName || !registrationData.regid || !registrationData.phoneNumber) {
                 alert('All fields are required!');
                 return;
             }
-            registrations.push(registrationData);
-            localStorage.setItem('registrations', JSON.stringify(registrations));
-            alert('Registration successful! Proceed to payment.');
-            window.location.href = `payment.html?event=${encodeURIComponent(eventName)}&registration=${encodeURIComponent(JSON.stringify(registrationData))}`;
+
+            try {
+                const response = await fetch('http://localhost:3000/api/events/register', { // Update with your backend URL
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(registrationData)
+                });
+
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('Registration successful! Proceed to payment.');
+                    window.location.href = `payment.html?event=${encodeURIComponent(eventName)}&registration=${encodeURIComponent(JSON.stringify(registrationData))}`;
+                } else {
+                    alert(result.message || 'Registration failed. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while registering for the event. Please try again later.');
+            }
         });
 
+        // Theme toggle
         const toggle = document.getElementById('theme-toggle');
         toggle.addEventListener('click', () => {
             document.body.classList.toggle('light-mode');
