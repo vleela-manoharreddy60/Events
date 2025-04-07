@@ -66,26 +66,49 @@
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="event-grid"></div>
     </div>
     <script>
-        if (!localStorage.getItem('isLoggedIn')) window.location.href = 'login.html';
-        document.getElementById('logout').addEventListener('click', (e) => {
-            e.preventDefault(); 
-            localStorage.removeItem('isLoggedIn'); 
+        // Check if user is authenticated with token
+        if (!localStorage.getItem('authToken')) {
             window.location.href = 'login.html';
-        });
-        
-        let events = JSON.parse(localStorage.getItem('events')) || [];
-        const eventGrid = document.getElementById('event-grid');
-        const registrations = JSON.parse(localStorage.getItem('registrations')) || [];
-        const userData = JSON.parse(localStorage.getItem('userData')) || {};
+        }
 
-        function renderEvents() {
+        const eventGrid = document.getElementById('event-grid');
+
+        // Fetch events and user registrations from backend
+        async function fetchEventsAndRegistrations() {
+            try {
+                // Fetch events
+                const eventsResponse = await fetch('http://localhost:3000/api/events', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+                if (!eventsResponse.ok) throw new Error('Failed to fetch events');
+                const events = await eventsResponse.json();
+
+                // Fetch user registrations
+                const registrationsResponse = await fetch('http://localhost:3000/api/user/registrations', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+                if (!registrationsResponse.ok) throw new Error('Failed to fetch registrations');
+                const registrations = await registrationsResponse.json();
+
+                renderEvents(events, registrations);
+            } catch (error) {
+                console.error('Error:', error);
+                eventGrid.innerHTML = '<p class="text-center col-span-full text-gray-500">Error loading events. Please try again later.</p>';
+            }
+        }
+
+        function renderEvents(events, registrations) {
             eventGrid.innerHTML = '';
             if (events.length === 0) {
                 eventGrid.innerHTML = '<p class="text-center col-span-full text-gray-500">No upcoming events available.</p>';
                 return;
             }
             events.forEach(event => {
-                const isRegistered = registrations.some(r => r.regid === userData.regid && r.eventName === event.name);
+                const isRegistered = registrations.some(r => r.eventName === event.name);
                 const card = document.createElement('div');
                 card.className = 'event-card';
                 card.innerHTML = `
@@ -112,22 +135,48 @@
                 button.addEventListener('click', (e) => {
                     if (button.disabled) return;
                     const eventName = button.getAttribute('data-event');
-                    window.location.href = `event_register.html?event=${encodeURIComponent(eventName)}`;
+                    registerForEvent(eventName);
                 });
             });
         }
 
+        async function registerForEvent(eventName) {
+            try {
+                const response = await fetch('http://localhost:3000/api/events/register', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ eventName })
+                });
+
+                if (response.ok) {
+                    alert('Successfully registered for the event!');
+                    fetchEventsAndRegistrations();
+                } else {
+                    const result = await response.json();
+                    alert(result.message || 'Failed to register for the event.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while registering for the event. Please try again later.');
+            }
+        }
+
+        // Logout functionality
+        document.getElementById('logout').addEventListener('click', async (e) => {
+            e.preventDefault();
+            localStorage.removeItem('authToken');
+            window.location.href = 'login.html';
+        });
+
+        // Refresh button
         document.getElementById('refresh-btn').addEventListener('click', () => {
-            events = JSON.parse(localStorage.getItem('events')) || [];
-            renderEvents();
+            fetchEventsAndRegistrations();
         });
 
-        window.addEventListener('storage', () => {
-            events = JSON.parse(localStorage.getItem('events')) || [];
-            registrations = JSON.parse(localStorage.getItem('registrations')) || [];
-            renderEvents();
-        });
-
+        // Theme toggle
         const toggle = document.getElementById('theme-toggle');
         toggle.addEventListener('click', () => {
             document.body.classList.toggle('light-mode');
@@ -135,7 +184,8 @@
         });
         if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
 
-        renderEvents();
+        // Initial fetch
+        fetchEventsAndRegistrations();
     </script>
 </body>
 </html>
