@@ -3,19 +3,13 @@ import Payment from '../models/Payment.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import multer from 'multer';
 import path from 'path';
-import fs from 'fs';
 
 const router = express.Router();
 
-// Ensure upload directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, uploadDir);
+    cb(null, './uploads/');
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
@@ -24,17 +18,18 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 router.post('/', authMiddleware, upload.single('screenshot'), async (req, res) => {
-  const { eventName, paymentMethod } = req.body;
+  const { eventName, paymentMethod, screenshotUrl } = req.body;
 
   try {
-    if (!req.user || !req.user.username) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
-    if (!eventName || !paymentMethod) {
-      return res.status(400).json({ success: false, message: 'eventName and paymentMethod are required' });
-    }
+    
+    const finalScreenshotUrl = req.file
+      ? `/uploads/${req.file.filename}`
+      : screenshotUrl || null;
 
-    const finalScreenshotUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    
+    if (!eventName || !paymentMethod) {
+      return res.status(400).json({ message: 'eventName and paymentMethod are required' });
+    }
 
     const payment = new Payment({
       eventName,
@@ -45,23 +40,9 @@ router.post('/', authMiddleware, upload.single('screenshot'), async (req, res) =
     });
 
     await payment.save();
-    res.status(201).json({ success: true, message: 'Payment recorded', data: payment });
+    res.status(201).json(payment);
   } catch (error) {
-    console.error('Error saving payment:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
-  }
-});
-
-router.get('/', authMiddleware, async (req, res) => {
-  try {
-    if (!req.user || !req.user.username) {
-      return res.status(401).json({ success: false, message: 'User not authenticated' });
-    }
-    const payments = await Payment.find({ username: req.user.username });
-    res.json({ success: true, data: payments });
-  } catch (error) {
-    console.error('Error fetching payments:', error);
-    res.status(500).json({ success: false, message: 'Server error', error: error.message });
+    res.status(500).json({ message: error.message });
   }
 });
 
