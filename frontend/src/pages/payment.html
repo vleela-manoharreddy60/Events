@@ -82,38 +82,108 @@
         </div>
     </div>
     <script>
+        // Check if user is authenticated
+        if (!localStorage.getItem('authToken')) {
+            window.location.href = 'login.html';
+        }
+
         const urlParams = new URLSearchParams(window.location.search);
         const eventName = urlParams.get('event') || 'Unknown Event';
         const registrationData = JSON.parse(decodeURIComponent(urlParams.get('registration') || '{}'));
         document.getElementById('payment-title').textContent = `Payment for ${eventName}`;
-        const events = JSON.parse(localStorage.getItem('events')) || [];
-        const event = events.find(e => e.name === eventName);
-        if (event && event.phonepeScreenshot) {
-            document.getElementById('reference-screenshot').src = event.phonepeScreenshot;
-        } else {
-            document.getElementById('reference-screenshot').src = 'https://via.placeholder.com/300x200?text=Reference+Not+Available';
+
+        // Fetch event details including reference screenshot
+        async function fetchEventDetails() {
+            try {
+                const response = await fetch(`http://localhost:3000/api/events/${encodeURIComponent(eventName)}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    }
+                });
+                if (!response.ok) throw new Error('Failed to fetch event details');
+                const event = await response.json();
+                document.getElementById('reference-screenshot').src = event.phonepeScreenshot || 'https://via.placeholder.com/300x200?text=Reference+Not+Available';
+                return event;
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('reference-screenshot').src = 'https://via.placeholder.com/300x200?text=Image+Not+Available';
+                return {};
+            }
         }
 
-        document.getElementById('submit-phonepe').addEventListener('click', () => {
+        document.getElementById('submit-phonepe').addEventListener('click', async () => {
             const file = document.getElementById('payment-screenshot').files[0];
-            if (!file) { alert('Please upload a screenshot.'); return; }
+            if (!file) {
+                alert('Please upload a screenshot.');
+                return;
+            }
+
             const reader = new FileReader();
-            reader.onload = (e) => {
-                const payment = { eventName, username: registrationData.userName, regid: registrationData.regid, paymentMethod: 'PhonePe', timestamp: new Date().toLocaleString(), screenshot: e.target.result };
-                let payments = JSON.parse(localStorage.getItem('eventPayments')) || [];
-                payments.push(payment);
-                localStorage.setItem('eventPayments', JSON.stringify(payments));
-                showModal('Successfully Registered!', event?.whatsappLink || '#');
+            reader.onload = async (e) => {
+                const paymentData = {
+                    eventName,
+                    username: registrationData.userName,
+                    regid: registrationData.regid,
+                    paymentMethod: 'PhonePe',
+                    timestamp: new Date().toISOString(),
+                    screenshot: e.target.result
+                };
+
+                try {
+                    const response = await fetch('http://localhost:3000/api/submit-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                        },
+                        body: JSON.stringify(paymentData)
+                    });
+
+                    const result = await response.json();
+                    if (response.ok) {
+                        const event = await fetchEventDetails();
+                        showModal('Payment submitted successfully!', event.whatsappLink);
+                    } else {
+                        alert(result.message || 'Payment submission failed.');
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('An error occurred while submitting payment.');
+                }
             };
             reader.readAsDataURL(file);
         });
 
-        document.getElementById('submit-manual').addEventListener('click', () => {
-            const payment = { eventName, username: registrationData.userName, regid: registrationData.regid, paymentMethod: 'Manual', timestamp: new Date().toLocaleString() };
-            let payments = JSON.parse(localStorage.getItem('eventPayments')) || [];
-            payments.push(payment);
-            localStorage.setItem('eventPayments', JSON.stringify(payments));
-            showModal('Successfully Registered!', event?.whatsappLink || '#');
+        document.getElementById('submit-manual').addEventListener('click', async () => {
+            const paymentData = {
+                eventName,
+                username: registrationData.userName,
+                regid: registrationData.regid,
+                paymentMethod: 'Manual',
+                timestamp: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch('http://localhost:3000/api/submit-payment', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify(paymentData)
+                });
+
+                const result = await response.json();
+                if (response.ok) {
+                    const event = await fetchEventDetails();
+                    showModal('Manual payment confirmed! Please coordinate with the event organizer.', event.whatsappLink);
+                } else {
+                    alert(result.message || 'Payment confirmation failed.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while confirming payment.');
+            }
         });
 
         function showModal(message, whatsappLink) {
@@ -129,18 +199,30 @@
             }
             modal.style.display = 'flex';
             document.getElementById('close-modal').focus();
-            setTimeout(() => { modal.style.display = 'none'; window.location.href = 'events.html'; }, 5000); // Auto-close after 5 seconds
         }
-        document.getElementById('close-modal').addEventListener('click', () => document.getElementById('confirmation-modal').style.display = 'none');
-        document.getElementById('confirmation-modal').addEventListener('click', (e) => {
-            if (e.target === document.getElementById('confirmation-modal')) document.getElementById('confirmation-modal').style.display = 'none';
+
+        document.getElementById('close-modal').addEventListener('click', () => {
+            document.getElementById('confirmation-modal').style.display = 'none';
+            window.location.href = 'events.html';
         });
+
+        document.getElementById('confirmation-modal').addEventListener('click', (e) => {
+            if (e.target === document.getElementById('confirmation-modal')) {
+                document.getElementById('confirmation-modal').style.display = 'none';
+                window.location.href = 'events.html';
+            }
+        });
+
+        // Theme toggle
         const toggle = document.getElementById('theme-toggle');
         toggle.addEventListener('click', () => {
             document.body.classList.toggle('light-mode');
             localStorage.setItem('theme', document.body.classList.contains('light-mode') ? 'light' : 'dark');
         });
         if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+
+        // Initial fetch of event details
+        fetchEventDetails();
     </script>
 </body>
 </html>
