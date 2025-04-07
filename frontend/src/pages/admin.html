@@ -62,7 +62,6 @@
             <form id="event-form" enctype="multipart/form-data">
                 <div class="mb-3"><label class="block text-sm font-medium mb-1">Event Name</label><input type="text" id="event-name" class="form-input w-full p-2" placeholder="Enter event name" required></div>
                 <div class="mb-3"><label class="block text-sm font-medium mb-1">Event Date</label><input type="date" id="event-date" class="form-input w-full p-2" required></div>
-                <div class="mb-3"><label class="block text-sm font-medium mb-1">Event Time</label><input type="time" id="event-time" class="form-input w-full p-2" placeholder="Enter event time" required></div>
                 <div class="mb-3"><label class="block text-sm font-medium mb-1">Coordinator Name</label><input type="text" id="coordinator-name" class="form-input w-full p-2" placeholder="Enter coordinator name" required></div>
                 <div class="mb-3"><label class="block text-sm font-medium mb-1">Coordinator Contact</label><input type="tel" id="coordinator-contact" class="form-input w-full p-2" placeholder="Enter coordinator contact" pattern="[0-9]{10}" required></div>
                 <div class="mb-3"><label class="block text-sm font-medium mb-1">Poster URL</label><input type="url" id="event-poster" class="form-input w-full p-2" placeholder="Enter poster image URL" required></div>
@@ -84,14 +83,14 @@
         </div>
     </div>
     <script>
-        if (!localStorage.getItem('isLoggedIn')) window.location.href = '/admin-login.html'; // Relative path
+        if (!localStorage.getItem('isLoggedIn')) window.location.href = '/admin-login.html';
         document.getElementById('logout').addEventListener('click', (e) => {
             e.preventDefault(); 
             localStorage.removeItem('isLoggedIn'); 
-            window.location.href = '/admin-login.html'; // Relative path
+            window.location.href = '/admin-login.html';
         });
 
-        const eventGrid = document.getElementById('event-grid');
+        const eventGrid = document.getElement with="event-grid');
         const totalEvents = document.getElementById('total-events');
         const totalRegistrations = document.getElementById('total-registrations');
 
@@ -102,7 +101,7 @@
                     alert('No token found. Please log in.');
                     return;
                 }
-                const response = await fetch('https://event-sphere.onrender.com/api/events', { // Replace with your Render URL after deployment
+                const response = await fetch('https://event-sphere.onrender.com/api/events', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch events');
@@ -127,7 +126,6 @@
                 card.innerHTML = `
                     <h3 class="text-lg font-semibold mb-2">${event.name}</h3>
                     <p class="mb-1 text-gray-500">Date: ${new Date(event.date).toLocaleDateString()}</p>
-                    <p class="mb-1 text-gray-500">Time: ${event.time || 'N/A'}</p>
                     <p class="mb-1 text-gray-500">Coordinator: ${event.coordinatorName}</p>
                     <p class="mb-1 text-gray-500">Contact: ${event.coordinatorContact}</p>
                     <button class="delete-btn w-full py-2 mt-3" data-id="${event._id}">Delete</button>
@@ -139,7 +137,7 @@
                     if (confirm('Are you sure you want to delete this event?')) {
                         const id = button.getAttribute('data-id');
                         const token = localStorage.getItem('token');
-                        const response = await fetch(`https://event-sphere.onrender.com/api/events/${id}`, { // Replace with your Render URL after deployment
+                        const response = await fetch(`https://event-sphere.onrender.com/api/events/${id}`, {
                             method: 'DELETE',
                             headers: { 'Authorization': `Bearer ${token}` }
                         });
@@ -161,13 +159,13 @@
                     alert('No token found. Please log in.');
                     return;
                 }
-                const response = await fetch('https://event-sphere.onrender.com/api/events/analytics', { // Replace with your Render URL after deployment
+                const response = await fetch('https://event-sphere.onrender.com/api/events/analytics', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 if (!response.ok) throw new Error('Failed to fetch analytics');
-                const { totalEvents, totalRegistrations } = await response.json();
-                totalEvents.textContent = totalEvents;
-                totalRegistrations.textContent = totalRegistrations;
+                const { totalEvents: totalEventsCount, totalRegistrations: totalRegistrationsCount } = await response.json();
+                totalEvents.textContent = totalEventsCount;
+                totalRegistrations.textContent = totalRegistrationsCount;
             } catch (error) {
                 console.error('Analytics error:', error);
                 totalEvents.textContent = 'Error';
@@ -180,12 +178,11 @@
             const formData = new FormData();
             formData.append('name', document.getElementById('event-name').value);
             formData.append('date', document.getElementById('event-date').value);
-            formData.append('time', document.getElementById('event-time').value);
             formData.append('coordinatorName', document.getElementById('coordinator-name').value);
             formData.append('coordinatorContact', document.getElementById('coordinator-contact').value);
             formData.append('poster', document.getElementById('event-poster').value);
             formData.append('whatsappLink', document.getElementById('whatsapp-link').value);
-            formData.append('phonepe-screenshot', document.getElementById('phonepe-screenshot').files[0]);
+            formData.append('phonepe-screenshot', document.getElementBy length="phonepe-screenshot').files[0]);
 
             try {
                 const token = localStorage.getItem('token');
@@ -193,7 +190,7 @@
                     alert('No token found. Please log in.');
                     return;
                 }
-                const response = await fetch('https://event-sphere.onrender.com/api/events', { // Replace with your Render URL after deployment
+                const response = await fetch('https://event-sphere.onrender.com/api/events', {
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${token}` },
                     body: formData
@@ -217,7 +214,6 @@
         });
         if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
 
-        // Initial fetch
         fetchEvents();
         updateAnalytics();
     </script>
